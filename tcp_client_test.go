@@ -9,9 +9,7 @@ import (
 	"github.com/phuslu/fastdns"
 )
 
-const upstreamDNSServer = "1.1.1.1:53"
-
-func BenchmarkUDPSTDLibDNS(b *testing.B) {
+func BenchmarkSTDLibDNS(b *testing.B) {
 	b.ReportAllocs()
 	b.ResetTimer()
 
@@ -20,7 +18,7 @@ func BenchmarkUDPSTDLibDNS(b *testing.B) {
 		client := net.Resolver{
 			PreferGo: true,
 			Dial: func(ctx context.Context, network, address string) (net.Conn, error) {
-				return d.DialContext(ctx, "udp", upstreamDNSServer)
+				return d.DialContext(ctx, "tcp", upstreamDNSServer)
 			},
 		}
 		for pb.Next() {
@@ -29,17 +27,13 @@ func BenchmarkUDPSTDLibDNS(b *testing.B) {
 	})
 }
 
-func BenchmarkUDPPhusluFastDNS(b *testing.B) {
+func BenchmarkPhusluFastDNS(b *testing.B) {
 	b.ReportAllocs()
 	b.ResetTimer()
 
 	b.RunParallel(func(pb *testing.PB) {
 		client := &fastdns.Client{
 			Addr: upstreamDNSServer,
-			Dialer: &fastdns.UDPDialer{
-				Addr:     func() (u *net.UDPAddr) { u, _ = net.ResolveUDPAddr("udp", upstreamDNSServer); return }(),
-				MaxConns: 1024,
-			},
 		}
 		for pb.Next() {
 			client.LookupNetIP(context.Background(), "ip4", "store.steampowered.com")
@@ -47,13 +41,13 @@ func BenchmarkUDPPhusluFastDNS(b *testing.B) {
 	})
 }
 
-func BenchmarkUDPMiekgDNS(b *testing.B) {
+func BenchmarkMiekgDNS(b *testing.B) {
 	b.ReportAllocs()
 	b.ResetTimer()
 
 	b.RunParallel(func(pb *testing.PB) {
 		client := &dns.Client{
-			Net: "",
+			Net: "tcp",
 		}
 
 		msg := &dns.Msg{}
